@@ -89,7 +89,7 @@ class TimeToolMainWindow(QMainWindow):
     def init_ui(self):
         """初始化用户界面"""
         self.setWindowTitle("Windows 系统时间修改工具")
-        self.setFixedSize(520, 820)
+        self.setFixedSize(600, 1000)
 
         # 设置应用程序字体
         self.setup_fonts()
@@ -163,10 +163,10 @@ class TimeToolMainWindow(QMainWindow):
 
         # 按钮配置：(文本, 天数, 行, 列)
         buttons_config = [
-            ("向后 7 天", -7, 0, 0),
-            ("向后 3 天", -3, 0, 1),
-            ("向前 3 天", 3, 1, 0),
-            ("向前 7 天", 7, 1, 1),
+            ("过去 7 天", -7, 0, 0),
+            ("过去 3 天", -3, 0, 1),
+            ("未来 3 天", 3, 1, 0),
+            ("未来 7 天", 7, 1, 1),
         ]
 
         for text, days, row, col in buttons_config:
