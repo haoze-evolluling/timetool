@@ -1,190 +1,339 @@
 """
-NTP 客户端模块
-提供从网络时间服务器获取准确时间的功能
+Windows 时间同步模块
+使用 Windows w32tm 命令配置阿里云 NTP 服务器并立即同步时间
 """
 
-import socket
-import struct
-import time
+import subprocess
 import datetime
-from typing import Optional, Tuple, List
+import time
+from typing import Tuple, List
 
 
-class NTPClient:
-    """NTP 客户端，用于从时间服务器获取准确时间"""
-    
-    # 常用的 NTP 服务器列表
-    DEFAULT_SERVERS = [
+class WindowsTimeSync:
+    """Windows 时间同步器，使用 w32tm 命令与阿里云 NTP 服务器同步"""
+
+    # 阿里云 NTP 服务器列表
+    ALIYUN_NTP_SERVERS = [
         'ntp.aliyun.com',
-        'cn.pool.ntp.org'
+        'ntp1.aliyun.com',
+        'ntp2.aliyun.com',
+        'ntp3.aliyun.com',
+        'ntp4.aliyun.com',
+        'ntp5.aliyun.com',
+        'ntp6.aliyun.com',
+        'ntp7.aliyun.com'
     ]
-    
-    def __init__(self, timeout: float = 5.0):
+
+    def __init__(self):
+        """初始化 Windows 时间同步器"""
+        pass
+
+    def is_admin(self) -> bool:
+        """检查当前进程是否具有管理员权限"""
+        try:
+            import ctypes
+            return bool(ctypes.windll.shell32.IsUserAnAdmin())
+        except:
+            return False
+
+    def _run_command(self, command: str) -> Tuple[bool, str]:
         """
-        初始化 NTP 客户端
-        
+        执行 Windows 命令
+
         Args:
-            timeout: 网络请求超时时间（秒）
-        """
-        self.timeout = timeout
-        
-    def _create_ntp_packet(self) -> bytes:
-        """创建 NTP 请求数据包"""
-        # NTP 数据包格式：48 字节
-        # 第一个字节：版本号(3位) + 模式(3位) + LI(2位)
-        # 版本号 = 3, 模式 = 3 (客户端), LI = 0
-        packet = bytearray(48)
-        packet[0] = 0x1B  # 00011011: LI=0, VN=3, Mode=3
-        return bytes(packet)
-    
-    def _parse_ntp_response(self, data: bytes) -> datetime.datetime:
-        """
-        解析 NTP 响应数据包
-        
-        Args:
-            data: NTP 响应数据
-            
+            command: 要执行的命令
+
         Returns:
-            解析出的时间
-        """
-        if len(data) < 48:
-            raise ValueError("NTP 响应数据包长度不足")
-        
-        # 提取传输时间戳（字节 40-47）
-        transmit_timestamp = struct.unpack('!Q', data[40:48])[0]
-        
-        # NTP 时间戳是从 1900-01-01 00:00:00 UTC 开始的秒数
-        # Unix 时间戳是从 1970-01-01 00:00:00 UTC 开始的秒数
-        # 两者相差 70 年 = 2208988800 秒
-        ntp_epoch_offset = 2208988800
-        
-        # 转换为 Unix 时间戳
-        unix_timestamp = (transmit_timestamp >> 32) - ntp_epoch_offset
-        
-        # 转换为 datetime 对象
-        return datetime.datetime.fromtimestamp(unix_timestamp, tz=datetime.timezone.utc)
-    
-    def get_time_from_server(self, server: str) -> Tuple[bool, Optional[datetime.datetime], str]:
-        """
-        从指定的 NTP 服务器获取时间
-        
-        Args:
-            server: NTP 服务器地址
-            
-        Returns:
-            (成功标志, 时间对象, 错误消息)
+            (成功标志, 输出信息)
         """
         try:
-            # 创建 UDP 套接字
-            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            sock.settimeout(self.timeout)
-            
-            # 创建并发送 NTP 请求
-            packet = self._create_ntp_packet()
-            sock.sendto(packet, (server, 123))
-            
-            # 接收响应
-            response, _ = sock.recvfrom(48)
-            sock.close()
-            
-            # 解析响应
-            ntp_time = self._parse_ntp_response(response)
-            
-            return True, ntp_time, f"成功从 {server} 获取时间"
-            
-        except socket.timeout:
-            return False, None, f"连接 {server} 超时"
-        except socket.gaierror:
-            return False, None, f"无法解析服务器地址 {server}"
-        except Exception as e:
-            return False, None, f"从 {server} 获取时间失败: {str(e)}"
-    
-    def get_accurate_time(self, servers: Optional[List[str]] = None) -> Tuple[bool, Optional[datetime.datetime], str]:
-        """
-        从多个 NTP 服务器获取准确时间
-        
-        Args:
-            servers: NTP 服务器列表，如果为 None 则使用默认服务器
-            
-        Returns:
-            (成功标志, 时间对象, 状态消息)
-        """
-        if servers is None:
-            servers = self.DEFAULT_SERVERS
-        
-        successful_times = []
-        error_messages = []
-        
-        for server in servers:
-            success, ntp_time, message = self.get_time_from_server(server)
-            if success and ntp_time:
-                successful_times.append((server, ntp_time))
+            result = subprocess.run(
+                command,
+                shell=True,
+                capture_output=True,
+                text=True,
+                timeout=30
+            )
+
+            if result.returncode == 0:
+                return True, result.stdout.strip()
             else:
-                error_messages.append(message)
-        
-        if not successful_times:
-            return False, None, "所有 NTP 服务器都无法访问: " + "; ".join(error_messages)
-        
-        # 如果有多个成功的时间，选择第一个（通常是最快响应的）
-        server, accurate_time = successful_times[0]
-        
-        # 转换为本地时间
-        local_time = accurate_time.replace(tzinfo=None) + datetime.timedelta(
-            seconds=time.timezone if time.daylight == 0 else time.altzone
-        )
-        
-        return True, local_time, f"成功从 {server} 获取准确时间（共尝试 {len(successful_times)} 个服务器）"
-    
-    def sync_system_time(self, time_manager) -> Tuple[bool, str]:
+                return False, result.stderr.strip() or result.stdout.strip()
+
+        except subprocess.TimeoutExpired:
+            return False, "命令执行超时"
+        except Exception as e:
+            return False, f"命令执行异常: {str(e)}"
+
+    def check_time_service_status(self) -> Tuple[bool, str, str]:
         """
-        同步系统时间到 NTP 时间
-        
-        Args:
-            time_manager: TimeManager 实例
-            
+        检查 Windows 时间服务状态
+
+        Returns:
+            (服务是否运行, 状态信息, 启动类型)
+        """
+        # 检查服务运行状态
+        check_command = 'sc query w32time'
+        success, output = self._run_command(check_command)
+
+        # 检查服务配置（启动类型）
+        config_command = 'sc qc w32time'
+        config_success, config_output = self._run_command(config_command)
+
+        start_type = "未知"
+        if config_success:
+            if "DISABLED" in config_output:
+                start_type = "已禁用"
+            elif "AUTO_START" in config_output:
+                start_type = "自动"
+            elif "DEMAND_START" in config_output:
+                start_type = "手动"
+
+        if success:
+            if "RUNNING" in output:
+                return True, "Windows 时间服务正在运行", start_type
+            elif "STOPPED" in output:
+                return False, "Windows 时间服务已停止", start_type
+            else:
+                return False, f"Windows 时间服务状态未知: {output}", start_type
+        else:
+            return False, f"无法检查时间服务状态: {output}", start_type
+
+    def enable_time_service(self) -> Tuple[bool, str]:
+        """
+        启用 Windows 时间服务（设置为自动启动）
+
         Returns:
             (成功标志, 状态消息)
         """
-        # 获取准确时间
-        success, accurate_time, message = self.get_accurate_time()
-        
-        if not success or not accurate_time:
-            return False, f"获取 NTP 时间失败: {message}"
-        
-        # 设置系统时间
-        success, set_message = time_manager.set_system_time(accurate_time)
-        
+        # 检查管理员权限
+        if not self.is_admin():
+            return False, "需要管理员权限才能启用时间服务"
+
+        # 设置服务为自动启动
+        enable_command = "sc config w32time start= auto"
+        success, output = self._run_command(enable_command)
+
         if success:
-            return True, f"NTP 时间同步成功: {message}"
+            return True, "Windows 时间服务已设置为自动启动"
         else:
-            return False, f"NTP 时间同步失败: {set_message}"
+            return False, f"启用时间服务失败: {output}"
+
+    def start_time_service(self) -> Tuple[bool, str]:
+        """
+        启动 Windows 时间服务
+
+        Returns:
+            (成功标志, 状态消息)
+        """
+        # 检查管理员权限
+        if not self.is_admin():
+            return False, "需要管理员权限才能启动时间服务"
+
+        # 先检查服务状态和配置
+        is_running, status_msg, start_type = self.check_time_service_status()
+        if is_running:
+            return True, status_msg
+
+        # 如果服务被禁用，先启用它
+        if start_type == "已禁用":
+            enable_success, enable_msg = self.enable_time_service()
+            if not enable_success:
+                return False, f"无法启用时间服务: {enable_msg}"
+
+        # 尝试启动服务
+        start_command = "net start w32time"
+        success, output = self._run_command(start_command)
+
+        if success:
+            return True, "Windows 时间服务启动成功"
+        elif "服务已经启动" in output or "service is already running" in output.lower():
+            return True, "Windows 时间服务已在运行"
+        else:
+            # 如果启动失败，尝试重新注册时间服务
+            register_command = "w32tm /register"
+            reg_success, reg_output = self._run_command(register_command)
+            if reg_success:
+                # 重新注册后可能需要重新启用
+                if start_type == "已禁用":
+                    self.enable_time_service()
+
+                # 重新注册后再次尝试启动
+                success, output = self._run_command(start_command)
+                if success:
+                    return True, "重新注册并启动 Windows 时间服务成功"
+
+            return False, f"启动时间服务失败: {output}"
+
+    def configure_ntp_server(self, server_list: List[str] = None) -> Tuple[bool, str]:
+        """
+        配置 Windows NTP 服务器
+
+        Args:
+            server_list: NTP 服务器列表，默认使用阿里云服务器
+
+        Returns:
+            (成功标志, 状态消息)
+        """
+        # 检查管理员权限
+        if not self.is_admin():
+            return False, "需要管理员权限才能配置 NTP 服务器"
+
+        # 确保时间服务正在运行
+        success, message = self.start_time_service()
+        if not success:
+            return False, f"启动时间服务失败: {message}"
+
+        if server_list is None:
+            server_list = self.ALIYUN_NTP_SERVERS[:3]  # 使用前3个阿里云服务器
+
+        # 构建服务器列表字符串
+        server_string = ",".join(server_list)
+
+        # 配置 NTP 服务器
+        config_command = f'w32tm /config /manualpeerlist:"{server_string}" /syncfromflags:manual /reliable:YES /update'
+
+        success, output = self._run_command(config_command)
+        if not success:
+            return False, f"配置 NTP 服务器失败: {output}"
+
+        # 重启 Windows Time 服务以应用配置
+        restart_command = "net stop w32time && net start w32time"
+        success, output = self._run_command(restart_command)
+        if not success:
+            return False, f"重启时间服务失败: {output}"
+
+        return True, f"成功配置 NTP 服务器: {server_string}"
+
+    def sync_time_immediately(self) -> Tuple[bool, str]:
+        """
+        立即同步时间
+
+        Returns:
+            (成功标志, 状态消息)
+        """
+        # 检查管理员权限
+        if not self.is_admin():
+            return False, "需要管理员权限才能同步时间"
+
+        # 确保时间服务正在运行
+        success, message = self.start_time_service()
+        if not success:
+            return False, f"启动时间服务失败: {message}"
+
+        # 强制立即同步时间
+        sync_command = "w32tm /resync /force"
+
+        success, output = self._run_command(sync_command)
+        if not success:
+            return False, f"时间同步失败: {output}"
+
+        return True, f"时间同步成功: {output}"
+
+    def get_sync_status(self) -> Tuple[bool, str]:
+        """
+        获取时间同步状态
+
+        Returns:
+            (成功标志, 状态信息)
+        """
+        status_command = "w32tm /query /status"
+
+        success, output = self._run_command(status_command)
+        if not success:
+            return False, f"获取同步状态失败: {output}"
+
+        return True, output
+
+    def sync_system_time(self, time_manager=None) -> Tuple[bool, str]:
+        """
+        同步系统时间到阿里云 NTP 服务器
+
+        Args:
+            time_manager: TimeManager 实例（为了兼容性保留，但不使用）
+
+        Returns:
+            (成功标志, 状态消息)
+        """
+        # 步骤1: 配置阿里云 NTP 服务器
+        success, config_message = self.configure_ntp_server()
+        if not success:
+            return False, f"配置 NTP 服务器失败: {config_message}"
+
+        # 等待服务重启
+        time.sleep(2)
+
+        # 步骤2: 立即同步时间
+        success, sync_message = self.sync_time_immediately()
+        if not success:
+            return False, f"时间同步失败: {sync_message}"
+
+        return True, f"阿里云 NTP 时间同步成功: {config_message}; {sync_message}"
 
 
-def test_ntp_client():
-    """测试 NTP 客户端功能"""
-    client = NTPClient()
-    
-    print("测试 NTP 客户端...")
+def test_windows_time_sync():
+    """测试 Windows 时间同步功能"""
+    sync_client = WindowsTimeSync()
+
+    print("测试 Windows 时间同步...")
     print(f"当前本地时间: {datetime.datetime.now()}")
-    
-    # 测试单个服务器
-    print("\n测试单个服务器:")
-    for server in client.DEFAULT_SERVERS[:3]:  # 测试前3个服务器
-        success, ntp_time, message = client.get_time_from_server(server)
-        print(f"{server}: {success}, {ntp_time}, {message}")
-    
-    # 测试获取准确时间
-    print("\n测试获取准确时间:")
-    success, accurate_time, message = client.get_accurate_time()
-    print(f"结果: {success}")
-    print(f"时间: {accurate_time}")
-    print(f"消息: {message}")
-    
-    if success and accurate_time:
-        current_time = datetime.datetime.now()
-        time_diff = abs((accurate_time - current_time).total_seconds())
-        print(f"与本地时间差异: {time_diff:.2f} 秒")
+    print(f"是否具有管理员权限: {sync_client.is_admin()}")
+
+    if not sync_client.is_admin():
+        print("\n警告: 需要管理员权限才能配置和同步时间")
+        print("请以管理员身份运行此程序以测试完整功能")
+        return
+
+    print("\n✓ 具有管理员权限，可以执行完整测试")
+
+    # 测试1: 检查时间服务状态
+    print("\n检查 Windows 时间服务状态:")
+    is_running, status_msg, start_type = sync_client.check_time_service_status()
+    print(f"服务状态: {status_msg}")
+    print(f"启动类型: {start_type}")
+
+    if not is_running:
+        print("尝试启动时间服务...")
+        success, start_msg = sync_client.start_time_service()
+        if success:
+            print(f"✓ {start_msg}")
+        else:
+            print(f"✗ {start_msg}")
+            print("无法启动时间服务，测试终止")
+            return
+
+    # 测试2: 获取同步状态
+    print("\n获取当前同步状态:")
+    success, status = sync_client.get_sync_status()
+    print(f"状态获取: {success}")
+    if success:
+        print(f"同步状态:\n{status}")
+
+    # 测试3: 配置阿里云 NTP 服务器
+    print("\n配置阿里云 NTP 服务器:")
+    success, message = sync_client.configure_ntp_server()
+    print(f"配置结果: {success}")
+    print(f"配置消息: {message}")
+
+    if success:
+        # 测试立即同步时间
+        print("\n立即同步时间:")
+        success, message = sync_client.sync_time_immediately()
+        print(f"同步结果: {success}")
+        print(f"同步消息: {message}")
+
+        # 再次获取同步状态
+        print("\n同步后状态:")
+        success, status = sync_client.get_sync_status()
+        if success:
+            print(f"新的同步状态:\n{status}")
+
+    # 测试完整的同步流程
+    print("\n测试完整同步流程:")
+    success, message = sync_client.sync_system_time()
+    print(f"完整同步结果: {success}")
+    print(f"完整同步消息: {message}")
 
 
 if __name__ == "__main__":
-    test_ntp_client()
+    test_windows_time_sync()

@@ -204,26 +204,27 @@ class ConfirmationDialog:
     @staticmethod
     def confirm_ntp_sync(parent: QWidget) -> bool:
         """
-        确认 NTP 同步操作
-        
+        确认阿里云时间同步操作
+
         Args:
             parent: 父窗口
-            
+
         Returns:
             用户是否确认
         """
-        message = "确定要同步网络时间吗？"
+        message = "确定要配置阿里云时间服务器并同步时间吗？"
         details = (
             "此操作将：\n"
-            "1. 从网络时间服务器获取准确时间\n"
-            "2. 覆盖当前的系统时间设置\n"
-            "3. 可能需要几秒钟时间完成\n\n"
-            "建议在需要准确时间时使用此功能。"
+            "1. 配置Windows时间服务使用阿里云NTP服务器\n"
+            "2. 重启Windows时间服务\n"
+            "3. 立即同步系统时间到阿里云时间服务器\n"
+            "4. 整个过程可能需要10-30秒时间完成\n\n"
+            "这将确保您的系统时间与阿里云标准时间保持同步。"
         )
-        
+
         return ConfirmationDialog.confirm_action(
             parent,
-            "确认 NTP 同步",
+            "确认阿里云时间同步",
             message,
             details
         )

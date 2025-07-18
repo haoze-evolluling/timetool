@@ -14,7 +14,7 @@ from PyQt5.QtCore import QTimer, Qt, QThread, pyqtSignal
 from PyQt5.QtGui import QFont, QIcon, QPalette
 
 from time_manager import TimeManager
-from ntp_client import NTPClient
+from ntp_client import WindowsTimeSync
 from error_handler import (
     ErrorHandler, ConfirmationDialog, OperationHistory,
     setup_global_error_handler, safe_execute
@@ -22,16 +22,16 @@ from error_handler import (
 
 
 class NTPSyncThread(QThread):
-    """NTP 同步线程，避免阻塞 UI"""
+    """Windows 时间同步线程，避免阻塞 UI"""
     finished = pyqtSignal(bool, str)
-    
-    def __init__(self, time_manager):
+
+    def __init__(self, time_manager=None):
         super().__init__()
-        self.time_manager = time_manager
-        self.ntp_client = NTPClient()
-    
+        self.time_manager = time_manager  # 保留兼容性，但不使用
+        self.time_sync = WindowsTimeSync()
+
     def run(self):
-        success, message = self.ntp_client.sync_system_time(self.time_manager)
+        success, message = self.time_sync.sync_system_time()
         self.finished.emit(success, message)
 
 
@@ -140,12 +140,12 @@ class TimeToolMainWindow(QMainWindow):
         layout.addWidget(adjust_group)
         
     def create_ntp_sync_button(self, layout):
-        """创建 NTP 同步按钮"""
-        ntp_group = QGroupBox("网络时间同步")
+        """创建阿里云时间同步按钮"""
+        ntp_group = QGroupBox("阿里云时间同步")
         ntp_group.setStyleSheet("QGroupBox { font-weight: bold; }")
         ntp_layout = QVBoxLayout(ntp_group)
-        
-        self.ntp_button = QPushButton("同步网络时间 (NTP)")
+
+        self.ntp_button = QPushButton("同步阿里云时间服务器")
         self.ntp_button.setStyleSheet(self.get_button_style("#3498db"))
         self.ntp_button.clicked.connect(self.sync_ntp_time)
         ntp_layout.addWidget(self.ntp_button)
@@ -249,7 +249,7 @@ class TimeToolMainWindow(QMainWindow):
         safe_execute(_perform_adjustment, self.error_handler)
                 
     def sync_ntp_time(self):
-        """同步 NTP 时间"""
+        """同步阿里云时间服务器"""
         if not self.time_manager.is_admin():
             self.show_admin_warning()
             return
@@ -262,13 +262,13 @@ class TimeToolMainWindow(QMainWindow):
                 self.ntp_button.setEnabled(False)
                 self.progress_bar.setVisible(True)
                 self.progress_bar.setRange(0, 0)  # 无限进度条
-                self.statusBar().showMessage("正在同步网络时间...")
+                self.statusBar().showMessage("正在配置阿里云时间服务器并同步...")
 
                 # 记录操作开始
-                self.log_message("开始 NTP 时间同步...")
+                self.log_message("开始配置阿里云 NTP 服务器并同步时间...")
 
-                # 启动 NTP 同步线程
-                self.ntp_thread = NTPSyncThread(self.time_manager)
+                # 启动时间同步线程
+                self.ntp_thread = NTPSyncThread()
                 self.ntp_thread.finished.connect(
                     lambda success, message: self.on_ntp_sync_finished(success, message, current_time)
                 )
@@ -277,11 +277,11 @@ class TimeToolMainWindow(QMainWindow):
                 return True
             return False
 
-        # 安全执行 NTP 同步
+        # 安全执行时间同步
         safe_execute(_perform_ntp_sync, self.error_handler)
             
     def on_ntp_sync_finished(self, success, message, old_time=None):
-        """NTP 同步完成回调"""
+        """阿里云时间同步完成回调"""
         self.ntp_button.setEnabled(True)
         self.progress_bar.setVisible(False)
 
@@ -289,20 +289,20 @@ class TimeToolMainWindow(QMainWindow):
         if old_time:
             new_time = self.time_manager.get_local_time() if success else None
             self.operation_history.add_operation(
-                "NTP 同步",
-                "网络时间同步",
+                "阿里云时间同步",
+                "配置阿里云NTP服务器并同步时间",
                 old_time,
                 new_time
             )
 
-        self.log_message(f"NTP 同步: {message}")
+        self.log_message(f"阿里云时间同步: {message}")
 
         if success:
-            self.statusBar().showMessage("NTP 同步成功", 3000)
+            self.statusBar().showMessage("阿里云时间同步成功", 3000)
             self.error_handler.show_info_dialog("同步成功", message)
         else:
-            self.statusBar().showMessage("NTP 同步失败", 3000)
-            self.error_handler.handle_error("NTP 同步失败", message)
+            self.statusBar().showMessage("阿里云时间同步失败", 3000)
+            self.error_handler.handle_error("阿里云时间同步失败", message)
             
     def undo_last_change(self):
         """撤销上次时间更改"""
