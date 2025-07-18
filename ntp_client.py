@@ -15,13 +15,8 @@ class WindowsTimeSync:
     # 阿里云 NTP 服务器列表
     ALIYUN_NTP_SERVERS = [
         'ntp.aliyun.com',
-        'ntp1.aliyun.com',
         'ntp2.aliyun.com',
-        'ntp3.aliyun.com',
-        'ntp4.aliyun.com',
-        'ntp5.aliyun.com',
-        'ntp6.aliyun.com',
-        'ntp7.aliyun.com'
+        'ntp3.aliyun.com'
     ]
 
     def __init__(self):
