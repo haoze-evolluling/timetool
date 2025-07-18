@@ -15,10 +15,6 @@ class NTPClient:
     
     # 常用的 NTP 服务器列表
     DEFAULT_SERVERS = [
-        'time.windows.com',
-        'pool.ntp.org',
-        'time.nist.gov',
-        'time.google.com',
         'ntp.aliyun.com',
         'cn.pool.ntp.org'
     ]
