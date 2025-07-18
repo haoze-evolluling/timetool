@@ -1,5 +1,7 @@
+__pycache__
 build
 dist
 TimeToolGUI.spec
 uninstall.bat
 install.bat
+time_tool.log
