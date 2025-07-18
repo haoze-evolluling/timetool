@@ -60,7 +60,7 @@ class TimeToolMainWindow(QMainWindow):
     def init_ui(self):
         """初始化用户界面"""
         self.setWindowTitle("Windows 系统时间修改工具")
-        self.setFixedSize(500, 600)
+        self.setFixedSize(500, 800)
         self.setStyleSheet(self.get_stylesheet())
         
         # 创建中央窗口部件
