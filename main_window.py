@@ -485,8 +485,8 @@ class TimeToolMainWindow(QMainWindow):
 def main():
     """主函数"""
     app = QApplication(sys.argv)
-    app.setApplicationName("Windows 系统时间修改工具")
-    app.setApplicationVersion("1.0")
+    app.setApplicationName("Time Jumping")
+    app.setApplicationVersion("2.0.203")
     
     # 设置应用程序图标（如果有的话）
     import os
