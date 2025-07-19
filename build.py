@@ -176,13 +176,13 @@ echo 正在卸载...
 :: 删除桌面快捷方式
 if exist "%DESKTOP_LINK%" (
     del "%DESKTOP_LINK%"
-    echo ✓ 已删除桌面快捷方式
+    echo 已删除桌面快捷方式
 )
 
 :: 删除安装目录
 if exist "%INSTALL_DIR%" (
     rmdir /s /q "%INSTALL_DIR%"
-    echo ✓ 已删除安装目录
+    echo 已删除安装目录
 )
 
 echo.

@@ -91,6 +91,12 @@ class TimeToolMainWindow(QMainWindow):
         self.setWindowTitle("Windows 系统时间修改工具")
         self.setFixedSize(600, 1000)
 
+        # 设置窗口图标
+        import os
+        icon_path = os.path.join(os.path.dirname(__file__), "icon.ico")
+        if os.path.exists(icon_path):
+            self.setWindowIcon(QIcon(icon_path))
+
         # 设置应用程序字体
         self.setup_fonts()
         self.setStyleSheet(self.get_stylesheet())
@@ -483,7 +489,10 @@ def main():
     app.setApplicationVersion("1.0")
     
     # 设置应用程序图标（如果有的话）
-    # app.setWindowIcon(QIcon("icon.ico"))
+    import os
+    icon_path = os.path.join(os.path.dirname(__file__), "icon.ico")
+    if os.path.exists(icon_path):
+        app.setWindowIcon(QIcon(icon_path))
     
     window = TimeToolMainWindow()
     window.show()

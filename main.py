@@ -54,10 +54,16 @@ def request_admin_privileges():
 def show_startup_message():
     """显示启动消息"""
     app = QApplication(sys.argv)
-    
+
     msg = QMessageBox()
     msg.setWindowTitle("Windows 系统时间修改工具")
     msg.setIcon(QMessageBox.Information)
+
+    # 设置消息框图标
+    icon_path = os.path.join(os.path.dirname(__file__), "icon.ico")
+    if os.path.exists(icon_path):
+        from PyQt5.QtGui import QIcon
+        msg.setWindowIcon(QIcon(icon_path))
     msg.setText("欢迎使用 Windows 系统时间修改工具！")
     msg.setInformativeText(
         "此工具可以帮助您快速修改系统时间。\n\n"
@@ -100,14 +106,20 @@ def main():
             print("无法获取管理员权限，程序将以受限模式运行")
     else:
         print("✓ 已获得管理员权限")
-    
+
     # 创建并运行应用程序
     try:
         app = QApplication(sys.argv)
         app.setApplicationName("Windows 系统时间修改工具")
         app.setApplicationVersion("1.0")
         app.setOrganizationName("TimeTools")
-        
+
+        # 设置应用程序图标
+        icon_path = os.path.join(os.path.dirname(__file__), "icon.ico")
+        if os.path.exists(icon_path):
+            from PyQt5.QtGui import QIcon
+            app.setWindowIcon(QIcon(icon_path))
+
         # 设置应用程序属性
         app.setAttribute(Qt.AA_EnableHighDpiScaling, True)
         app.setAttribute(Qt.AA_UseHighDpiPixmaps, True)
