@@ -13,55 +13,43 @@ from pathlib import Path
 
 def check_dependencies():
     """检查构建依赖"""
-    print("检查构建依赖...")
-    
     try:
         import PyInstaller
-        print(f"✓ PyInstaller 版本: {PyInstaller.__version__}")
     except ImportError:
         print("✗ PyInstaller 未安装")
         print("请运行: pip install pyinstaller")
         return False
-    
+
     try:
         import PyQt5
-        print(f"✓ PyQt5 已安装")
     except ImportError:
         print("✗ PyQt5 未安装")
         print("请运行: pip install PyQt5")
         return False
-    
+
     return True
 
 
 def clean_build_dirs():
     """清理构建目录"""
-    print("清理构建目录...")
-    
     dirs_to_clean = ['build', 'dist', '__pycache__']
-    
+
     for dir_name in dirs_to_clean:
         if os.path.exists(dir_name):
             shutil.rmtree(dir_name)
-            print(f"✓ 已清理 {dir_name}")
-    
+
     # 清理 .spec 文件
     for spec_file in Path('.').glob('*.spec'):
         spec_file.unlink()
-        print(f"✓ 已删除 {spec_file}")
 
 
 def create_icon():
     """创建应用程序图标（如果不存在）"""
     icon_path = "icon.ico"
-    
+
     if not os.path.exists(icon_path):
-        print("创建默认图标...")
-        # 这里可以添加创建默认图标的代码
-        # 暂时跳过图标创建
-        print("⚠ 未找到图标文件，将使用默认图标")
         return None
-    
+
     return icon_path
 
 
@@ -104,13 +92,10 @@ def build_executable():
     # 主程序文件
     build_args.append('main.py')
     
-    print(f"构建命令: {' '.join(build_args)}")
-    
     try:
         # 执行构建
         result = subprocess.run(build_args, check=True, capture_output=True, text=True)
         print("✓ 构建成功！")
-        print(result.stdout)
         return True
         
     except subprocess.CalledProcessError as e:
@@ -158,8 +143,6 @@ pause
     
     with open('install.bat', 'w', encoding='gbk') as f:
         f.write(installer_script)
-    
-    print("✓ 已创建安装脚本: install.bat")
 
 
 def create_uninstaller_script():
@@ -192,32 +175,22 @@ pause
     
     with open('uninstall.bat', 'w', encoding='gbk') as f:
         f.write(uninstaller_script)
-    
-    print("✓ 已创建卸载脚本: uninstall.bat")
 
 
 def post_build_tasks():
     """构建后任务"""
-    print("执行构建后任务...")
-    
     # 检查生成的文件
     exe_path = os.path.join('dist', 'TimeToolGUI.exe')
     if os.path.exists(exe_path):
-        file_size = os.path.getsize(exe_path) / (1024 * 1024)  # MB
-        print(f"✓ 可执行文件已生成: {exe_path}")
-        print(f"✓ 文件大小: {file_size:.2f} MB")
-        
         # 创建安装和卸载脚本
         create_installer_script()
         create_uninstaller_script()
-        
+
         # 复制到 dist 目录
         shutil.copy('install.bat', 'dist/')
         shutil.copy('uninstall.bat', 'dist/')
-        
+
         print("✓ 构建完成！")
-        print(f"✓ 输出目录: {os.path.abspath('dist')}")
-        
         return True
     else:
         print("✗ 未找到生成的可执行文件")
@@ -228,28 +201,22 @@ def main():
     """主函数"""
     print("Windows 系统时间修改工具 - 构建脚本")
     print("=" * 50)
-    
+
     # 检查依赖
     if not check_dependencies():
         return 1
-    
+
     # 清理构建目录
     clean_build_dirs()
-    
+
     # 构建可执行文件
     if not build_executable():
         return 1
-    
+
     # 构建后任务
     if not post_build_tasks():
         return 1
-    
-    print("\n构建成功完成！")
-    print("可以在 dist 目录中找到以下文件：")
-    print("- TimeToolGUI.exe (主程序)")
-    print("- install.bat (安装脚本)")
-    print("- uninstall.bat (卸载脚本)")
-    
+
     return 0
 
 
@@ -258,8 +225,6 @@ if __name__ == "__main__":
         exit_code = main()
         sys.exit(exit_code)
     except KeyboardInterrupt:
-        print("\n构建被用户中断")
         sys.exit(1)
     except Exception as e:
-        print(f"\n构建过程中发生错误: {e}")
         sys.exit(1)

@@ -57,7 +57,6 @@ class TimeManager:
             )
             return False  # 当前进程将退出
         except Exception as e:
-            print(f"请求管理员权限失败: {e}")
             return False
     
     def get_system_time(self) -> datetime.datetime:
@@ -153,33 +152,4 @@ class TimeManager:
         return self.set_system_time(last_time)
 
 
-def test_time_manager():
-    """测试时间管理器功能"""
-    tm = TimeManager()
-    
-    print(f"是否具有管理员权限: {tm.is_admin()}")
-    print(f"当前系统时间: {tm.get_system_time()}")
-    print(f"当前本地时间: {tm.get_local_time()}")
-    
-    if not tm.is_admin():
-        print("需要管理员权限才能修改系统时间")
-        return
-    
-    # 测试时间调整
-    print("\n测试时间调整...")
-    success, message = tm.adjust_time(minutes=1)
-    print(f"调整结果: {success}, 消息: {message}")
-    
-    if success:
-        print(f"调整后时间: {tm.get_local_time()}")
-        
-        # 测试撤销
-        if tm.can_undo():
-            print("\n测试撤销功能...")
-            success, message = tm.undo_last_change()
-            print(f"撤销结果: {success}, 消息: {message}")
-            print(f"撤销后时间: {tm.get_local_time()}")
 
-
-if __name__ == "__main__":
-    test_time_manager()

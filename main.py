@@ -47,7 +47,6 @@ def request_admin_privileges():
         )
         return True
     except Exception as e:
-        print(f"请求管理员权限失败: {e}")
         return False
 
 
@@ -85,27 +84,14 @@ def show_startup_message():
 
 def main():
     """主函数"""
-    print("Windows 系统时间修改工具 v1.0")
-    print("=" * 40)
-    
     # 检查管理员权限
     if not check_admin_privileges():
-        print("警告：当前没有管理员权限")
-        print("修改系统时间需要管理员权限")
-        
         # 显示启动消息
         if not show_startup_message():
-            print("用户取消启动")
             return
-        
-        print("尝试请求管理员权限...")
+
         if request_admin_privileges():
-            print("已请求管理员权限，程序将重新启动")
             return
-        else:
-            print("无法获取管理员权限，程序将以受限模式运行")
-    else:
-        print("✓ 已获得管理员权限")
 
     # 创建并运行应用程序
     try:
@@ -127,24 +113,15 @@ def main():
         # 创建主窗口
         window = TimeToolMainWindow()
         window.show()
-        
-        print("应用程序已启动")
-        print("GUI 界面已打开")
-        
+
         # 运行应用程序
         exit_code = app.exec_()
-        print(f"应用程序退出，退出代码: {exit_code}")
-        
         return exit_code
-        
+
     except ImportError as e:
-        print(f"导入错误: {e}")
-        print("请确保已安装所有必要的依赖包：")
-        print("pip install -r requirements.txt")
         return 1
-        
+
     except Exception as e:
-        print(f"应用程序启动失败: {e}")
         return 1
 
 
@@ -153,8 +130,6 @@ if __name__ == "__main__":
         exit_code = main()
         sys.exit(exit_code)
     except KeyboardInterrupt:
-        print("\n用户中断程序")
         sys.exit(0)
     except Exception as e:
-        print(f"程序异常退出: {e}")
         sys.exit(1)
