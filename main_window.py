@@ -40,6 +40,12 @@ class TimeToolMainWindow(QMainWindow):
     
     def __init__(self):
         super().__init__()
+        # 设置窗口图标
+        import os
+        from PyQt5.QtGui import QIcon
+        icon_path = os.path.join(os.path.dirname(__file__), "icon.ico")
+        if os.path.exists(icon_path):
+            self.setWindowIcon(QIcon(icon_path))
         self.time_manager = TimeManager()
         self.ntp_thread = None
 
