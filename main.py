@@ -9,9 +9,6 @@ Windows 系统时间修改工具
 - 管理员权限管理
 - 操作日志记录
 - 撤销功能
-
-作者：AI Assistant
-版本：1.0
 """
 
 import sys
@@ -50,46 +47,12 @@ def request_admin_privileges():
         return False
 
 
-def show_startup_message():
-    """显示启动消息"""
-    app = QApplication(sys.argv)
-
-    msg = QMessageBox()
-    msg.setWindowTitle("Windows 系统时间修改工具")
-    msg.setIcon(QMessageBox.Information)
-
-    # 设置消息框图标
-    icon_path = os.path.join(os.path.dirname(__file__), "icon.ico")
-    if os.path.exists(icon_path):
-        from PyQt5.QtGui import QIcon
-        msg.setWindowIcon(QIcon(icon_path))
-    msg.setText("欢迎使用 Windows 系统时间修改工具！")
-    msg.setInformativeText(
-        "此工具可以帮助您快速修改系统时间。\n\n"
-        "功能包括：\n"
-        "• 快速时间调整（±3天、±7天）\n"
-        "• NTP 网络时间同步\n"
-        "• 操作撤销功能\n"
-        "• 详细的操作日志\n\n"
-        "注意：修改系统时间需要管理员权限。"
-    )
-    msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
-    msg.setDefaultButton(QMessageBox.Ok)
-    
-    result = msg.exec_()
-    app.quit()
-    
-    return result == QMessageBox.Ok
-
 
 def main():
     """主函数"""
     # 检查管理员权限
     if not check_admin_privileges():
-        # 显示启动消息
-        if not show_startup_message():
-            return
-
+        # 直接请求管理员权限
         if request_admin_privileges():
             return
 
